@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './App.css';  // Assuming we have some basic styling
+import './App.css';
 import useBackend from './hooks/useBackend';
 
 function App() {
@@ -8,12 +8,17 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [history, setHistory] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const ITEMS_PER_PAGE = 5;
 
   const { fetchHistory, askQuestion } = useBackend();
 
   useEffect(() => {
     fetchHistory()
-      .then(backendHistory => setHistory(backendHistory))
+      .then(backendHistory => {
+        setHistory(backendHistory.reverse());
+        setCurrentPage(0); // Reset to first page on new fetch
+      })
       .catch(() => {}); // Optionally set error, but don't block UI
   }, [fetchHistory]);
 
@@ -85,7 +90,7 @@ function App() {
           <div className="history-area">
             <h3>Previous Questions:</h3>
             <ul>
-              {history.map((item) => (
+              {history.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map((item) => (
                 <li key={item.id}>
                   <strong>Q:</strong> {item.question}<br />
                   <strong>A:</strong> {item.response}<br />
@@ -93,6 +98,20 @@ function App() {
                 </li>
               ))}
             </ul>
+            <div className="pagination-controls">
+              <button
+                onClick={() => setCurrentPage(prev => prev - 1)}
+                disabled={currentPage === 0}
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setCurrentPage(prev => prev + 1)}
+                disabled={(currentPage + 1) * ITEMS_PER_PAGE >= history.length}
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>
