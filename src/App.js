@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';  // Assuming we have some basic styling
+import useBackend from './hooks/useBackend';
 
 function App() {
   const [question, setQuestion] = useState('');
@@ -8,63 +9,34 @@ function App() {
   const [error, setError] = useState(null);
   const [history, setHistory] = useState([]);
 
-  // Fetch history from backend on mount
+  const { fetchHistory, askQuestion } = useBackend();
+
   useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const res = await fetch('http://localhost:8000/history');
-        if (!res.ok) throw new Error('Failed to fetch history');
-        const data = await res.json();
-        // Map backend history to match frontend format (no response/timestamp)
-        const backendHistory = (data.history || []).map(item => ({
-          id: item.id,
-          question: item.question,
-          response: item.answer || '',
-          timestamp: item.timestamp ? new Date(item.timestamp).toLocaleString() : ''
-        }));
-        setHistory(backendHistory);
-      } catch (err) {
-        // Optionally set error, but don't block UI
-      }
-    };
-    fetchHistory();
-  }, []);
+    fetchHistory()
+      .then(backendHistory => setHistory(backendHistory))
+      .catch(() => {}); // Optionally set error, but don't block UI
+  }, [fetchHistory]);
 
   const handleSend = async () => {
     if (!question.trim()) {
       setError('Please enter a question');
       return;
     }
-    
     setIsLoading(true);
     setError(null);
-    
     try {
-      const res = await fetch('http://localhost:8000/ask', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question }),
-      });
-      
-      if (!res.ok) {
-        throw new Error(`Server responded with ${res.status}`);
-      }
-      
-      const data = await res.json();
-      setResponse(data.response);
-      
-      // Add to history
+      const { response: answer, question_id } = await askQuestion(question);
+      setResponse(answer);
       setHistory(prev => [
         ...prev,
         {
           question,
-          response: data.response,
-          id: data.question_id,
+          response: answer,
+          id: question_id,
           timestamp: new Date().toLocaleString()
         }
       ]);
-      
-      setQuestion('');  // Clear input after sending
+      setQuestion('');
     } catch (err) {
       setError(err.message);
       setResponse("Sorry, there was an error processing your question.");
