@@ -75,3 +75,17 @@
   gap: 40px;
   margin-top: 1rem;
 }
+
+/* Responsive styles for input area on small screens */
+@media (max-width: 600px) {
+  .input-area {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .input-area input,
+  .input-area button {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 18px;
+  }
+}
